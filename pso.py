@@ -11,7 +11,8 @@ class PSO:
     """粒子群优化算法类"""
     
     def __init__(self, n_particles=30, n_dimensions=2, max_iter=100, 
-                 w=0.7, c1=1.5, c2=1.5, bounds=(-10, 10)):
+                 w=0.7, c1=1.5, c2=1.5, bounds=(-10, 10),
+                 adaptive_w=True, w_min=0.4, w_max=0.9):
         """
         初始化 PSO 参数
         
@@ -19,10 +20,13 @@ class PSO:
             n_particles: 粒子数量
             n_dimensions: 问题维度
             max_iter: 最大迭代次数
-            w: 惯性权重
+            w: 惯性权重（固定值或初始值）
             c1: 个体学习因子
             c2: 社会学习因子
             bounds: 搜索空间边界
+            adaptive_w: 是否使用自适应惯性权重
+            w_min: 最小惯性权重
+            w_max: 最大惯性权重
         """
         self.n_particles = n_particles
         self.n_dimensions = n_dimensions
@@ -31,6 +35,9 @@ class PSO:
         self.c1 = c1
         self.c2 = c2
         self.bounds = bounds
+        self.adaptive_w = adaptive_w
+        self.w_min = w_min
+        self.w_max = w_max
         
         # 初始化粒子位置和速度
         self.positions = np.random.uniform(
@@ -89,11 +96,17 @@ class PSO:
                     self.gbest_position = self.positions[i].copy()
             
             # 更新速度和位置
+            # 自适应惯性权重：w = w_max - (w_max - w_min) * iteration / max_iter
+            if self.adaptive_w:
+                current_w = self.w_max - (self.w_max - self.w_min) * iteration / self.max_iter
+            else:
+                current_w = self.w
+            
             r1 = np.random.random((self.n_particles, self.n_dimensions))
             r2 = np.random.random((self.n_particles, self.n_dimensions))
             
             self.velocities = (
-                self.w * self.velocities +
+                current_w * self.velocities +
                 self.c1 * r1 * (self.pbest_positions - self.positions) +
                 self.c2 * r2 * (self.gbest_position - self.positions)
             )
